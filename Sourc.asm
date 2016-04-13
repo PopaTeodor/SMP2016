@@ -1,16 +1,31 @@
 ; multi-segment executable file template.
-
+INCLUDE 'emu8086.inc'
 data segment
 	menu db "Hello.Please choose your option: $"
-    menu1 db "1)Draw a rectangle.$"
-	menu2 db "2)Draw a triangle.$"
-	menu3 db "3)Draw with your mouse.$"
-	menu4 db "4)Quit.$"
-	oldX dw -1
-	oldY dw 0 
+    menu1 db "1)Draw a rectangle$"
+	menu2 db "2)Draw a triangle$"
+	menu3 db "3)Draw with your mouse$"
+	menusettings db "4)Settings$"
+	menu5 db "5)Quit$"
+	menusettings1 db "Selecteaza culoarea pe care o doresti:(1-15)$"
+	menusettings2 db "Apasa escape pentru a confirma si a te intoarce la meniul principal.$"
+	;liniile meniului	
+
+	dim2 equ 50
+	dim1 equ 100
+	;dimensiune figuri(default:100*50)
+
+	posX equ 100 
+	posY equ 100 
+	;offseturi fata de (0,0) pentru pozitiile figurilor
+		
+	color db 15
+	;culoare figuri(default:alb)
+	
+	
 ends
 
-stack segment
+stack segment 
     dw   128  dup(0)
 ends
 
@@ -19,44 +34,97 @@ start:
     mov ax, data
     mov ds, ax
     mov es, ax     
-    call clearscreen  ;clears the screen        
-    call writeMenu
+    call clearscreen  ;curata ecranul        
+    call writeMenu ;afiseaza meniul
 	
     mov ah,1h
-    int 21h        ;input from keyboard
-    
+    int 21h        ;input(KB)  
+      
                      
+    cmp al, "5"
+    je quit   ;Inchidere program si return la OS
+	
     cmp al, "4"
-    je quit   
+    je drawSettings   ;Meniul de setari
     
     cmp al, "3"
-    je drawMouse
+    je drawMouse  ;Desen cu ajutorul mouse-ului
     
     cmp al, "2"
-    je drawTriangle
+    je drawTriangle ;Deseneaza un triunghi
     	
 	cmp al, "1"
-    je drawRectangle
+    je drawRectangle   ;Deseneaza un dreptunghi
     
   
     jmp start
      
+drawSettings:;Meniul de setari
+	call clearscreen
+    mov dh, 0
+    mov dl, 0 
+    mov ah, 2h
+    int 10h
+     
+    lea dx, menusettings1
+    mov ah, 9
+    int 21h
 
-drawMouse: 		 
+	mov ah,1h
+    int 21h     	
+	mov color, al
+
+	mov dh, 1
+    mov dl, 0 
+    mov ah, 2h
+    int 10h
+	lea dx, menusettings2
+    mov ah, 9
+    int 21h
+	
+	mov cx, posX+dim1 ;coloana
+	mov dx, posY ;linie
+	mov al, color ;culoare
+drawLine:
+	mov ah, 0ch 
+	int 10h
+	
+	dec cx
+	cmp cx, posX
+	jae drawLine
+	
+	;desenez o linie pentru a afisa noua culoare
+	
+	mov ah,1h
+    int 21h      
+	cmp al, 27	;tasta Escape pentru confirmare
+	jne drawSettings
+	
+	jmp start
+
+	 
+	 
+	 
+	 
+	 
+drawMouse: 		 ;program de desen cu ajutorul mouse-ului. Referinta: Laboratorul 4 SMP  
 		
+		oldX dw -1
+		oldY dw 0
 		mov ax, 0 
 		int 33h 
-		
+		;initializare mod lucru mouse
 		cmp ax, 0    
 	check_mouse_button:
 		
 		mov ax, 3
 		int 33h 
+		;preluare pozitie cursor si stare butoane 
 		shr cx, 1
 		
 		cmp bx, 1  
 		jne xor_cursor
-		mov al, 1010b 
+		mov al, color
 		jmp draw_pixel 
 		
 	xor_cursor:
@@ -83,13 +151,14 @@ drawMouse:
 		
 	draw_pixel:
 		mov ah, 0ch
-		int 10h    
+		int 10h  ;desenare pixel  
 		
 	check_esc_key:
 		mov dl, 255
 		mov ah, 6
 		int 21h
-		cmp al, 27	
+		
+		cmp al, 27	;verificare daca s-a apasat tasta Escape
 		jne check_mouse_button
 		
 	stop:
@@ -98,61 +167,60 @@ drawMouse:
 
 
 
-drawRectangle:	
-	w equ 100 ; dimensiune dreptunghi
-	h equ 50
-	posX equ 100
-	posY equ 100
-	color equ 15
-	; afisare latura superioara
-	mov cx, posX+w ; coloana
-	mov dx, posY ; rand
-	mov al, color ; alb
-u1:
-	mov ah, 0ch ; afisare pixel
-	int 10h
-	
-	dec cx
-	cmp cx, posX
-	jae u1	
-	; afisare latura inferioare
-	
-	mov cx, posX+w
-	mov dx, posY+h
-	mov al, color
-u2:
-	mov ah, 0ch
-	int 10h
-	
-	dec cx
-	cmp cx, posX
-	ja u2
-	; latura din stanga
-	
-	mov cx, posX
-	mov dx, posY+h
-	mov al, color
-u3:
-	mov ah, 0ch
-	int 10h
-	
-	dec dx
-	cmp dx, posY
-	ja u3
-	; latura din dreapta
-	
-	mov cx, posX+w
-	mov dx, posY+h
+drawRectangle:	;Program desen dreptunghi
+
+	;latura sus
+	mov cx, posX+dim1 
+	mov dx, posY 
 	mov al, color 
-u4: 
+rectUp:
+	mov ah, 0ch 
+	int 10h
+	
+	dec cx
+	cmp cx, posX
+	jae rectUp	
+	
+	
+	;latura jos	
+	mov cx, posX + dim1
+	mov dx, posY + dim2
+	mov al, color
+rectDown:
+	mov ah, 0ch
+	int 10h
+	
+	dec cx
+	cmp cx, posX
+	ja rectDown
+	
+	
+	;latura stanga	
+	mov cx, posX
+	mov dx, posY + dim2
+	mov al, color
+rectLeft:
 	mov ah, 0ch
 	int 10h
 	
 	dec dx
 	cmp dx, posY
-	ja u4
-	; asteptare apasare tasta
+	ja rectLeft
 	
+		
+	;latura dreapta	
+	mov cx, posX + dim1
+	mov dx, posY + dim2
+	mov al, color 
+rectRight: 
+	mov ah, 0ch
+	int 10h
+	
+	dec dx
+	cmp dx, posY
+	ja rectRight
+	
+	;apasare de tasta pentru confirmare
 	mov ah,00
 	int 16h
 
@@ -162,49 +230,46 @@ jmp start
 
 
 
-drawTriangle:
-    posX equ 100
-	posY equ 100
-	color equ 15
-	h equ 50
-	w equ 50
-	mov cx,posX + 100
-	mov dx, posY+h
-	mov al, color
-u5:
-	mov ah, 0ch ; afisare pixel
-	int 10h
-	
+drawTriangle:  ;Program desen triunghi
+
+;baza triunghiului
+	mov cx,posX + dim1
+	mov dx, posY + dim2
+	mov al, color	
+triDown:
+	mov ah, 0ch 
+	int 10h	
 	dec cx
 	cmp cx, posX
-    jae u5    
+    jae triDown    
     
+	
+;latura stanga
 	mov cx,	posX
-	mov dx, posY + h
-	mov al, color
-u6:	
+	mov dx, posY + dim2
+	mov al, color	
+triLeft:	
 	mov ah,0ch 
-	int 10h
-	
+	int 10h	
 	dec dx
-	inc cx
-	
+	inc cx	
 	cmp dx, posY
-	jae u6
+	jae triLeft
 	
-	mov cx,	posX + w
-	mov dx, posY + h
-	mov al, color
-u7:
+	
+;latura dreapta
+	mov cx,	posX + dim1
+	mov dx, posY + dim2
+	mov al, color	
+triRight:
 	mov ah, 0ch
-	int 10h
-		
+	int 10h		
 	dec cx  
 	dec dx
 	cmp dx, posY
-	jae u7
+	jae triRight
 
-	
+;apasare de tasta pentru confirmare
 	mov ah,00
 	int 16h
 jmp start
@@ -215,11 +280,11 @@ jmp start
 
  
 quit:    
-    mov ax, 4c00h ; exit to operating system.
+    mov ax, 4c00h ; exit la sistemul de operare
     int 21h
     
     
-clearscreen:
+clearscreen: ;curata ecranul 
     mov al, 13h
     mov ah, 0
     int 10h   
@@ -272,7 +337,16 @@ writeMenu:
     mov ah, 2h
     int 10h
      
-    lea dx, menu4
+    lea dx, menusettings
+    mov ah, 9
+    int 21h 
+    
+    mov dh, 5
+    mov dl, 0 
+    mov ah, 2h
+    int 10h
+	
+	lea dx, menu5
     mov ah, 9
     int 21h 
     
@@ -286,4 +360,4 @@ ret
  
 ends
 
-end start ; set entry point and stop the assembler.
+end start 
