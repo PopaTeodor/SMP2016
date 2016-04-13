@@ -8,7 +8,7 @@ Optiuni:
 * Alegerea culorii cu care se deseneaza  
 
 <br>
-<img height = "100" src = https://github.com/PopaTeodor/SMP2016/master/Triangle.png" />
+<img height = "100" src = "https://github.com/PopaTeodor/SMP2016/blob/master/Triangle.PNG" />
 <br>
 
 
