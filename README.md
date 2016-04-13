@@ -9,6 +9,7 @@ Optiuni:
 
 <br>
 <img height = "100" src = "https://github.com/PopaTeodor/SMP2016/blob/master/Triangle.PNG" />
+<img height = "100" src = "https://github.com/PopaTeodor/SMP2016/blob/master/Rectangle.PNG" />
 <br>
 
 
