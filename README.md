@@ -7,7 +7,9 @@ Optiuni:
 * Desenare folosind mouse  
 * Alegerea culorii cu care se deseneaza  
 
-
+<br>
+<img height = "100" src = https://github.com/PopaTeodor/SMP2016/master/Triangle.png" />
+<br>
 
 
 
